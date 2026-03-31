@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --sky-blue-pastel: #B0E0E6;
+  --dark-chocolate: #3C2415;
+  --primary-blue: #4A90E2;
+  --magnetic-snap: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+body {
+  background-color: var(--sky-blue-pastel);
+  color: var(--dark-chocolate);
+  font-family: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* Magnetic button effect */
+.magnetic-button {
+  transition: all 0.3s var(--magnetic-snap);
+  transform: translateZ(0);
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.magnetic-button:hover {
+  transform: scale(1.1) translateZ(0);
+  box-shadow: 0 8px 25px rgba(74, 144, 226, 0.4);
+}
+
+.magnetic-button:active {
+  transform: scale(0.95) translateZ(0);
+}
+
+/* High contrast focus states */
+button:focus-visible {
+  outline: 3px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .magnetic-button {
+    transition: none;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dyspraxia-friendly spacing */
+.interactive-zone {
+  padding: 1rem;
+  margin: 0.5rem;
+}
+
+/* Face recognition camera styles */
+.camera-container {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #000;
+}
+
+.camera-overlay {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--primary-blue);
+  border-radius: 1rem;
+  pointer-events: none;
+}
+
+/* AI Terminal styling */
+.ai-terminal {
+  background: #1a1a1a;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.ai-input {
+  background: transparent;
+  border: none;
+  color: #00ff00;
+  width: 100%;
+  outline: none;
+}
+
+.ai-input::placeholder {
+  color: rgba(0, 255, 0, 0.6);
+}
+
+/* Touch typing keyboard */
+.keyboard-key {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.keyboard-key:hover {
+  transform: scale(1.05);
+  background-color: var(--primary-blue);
+  color: white;
+}
+
+.keyboard-key.active {
+  background-color: var(--primary-blue);
+  color: white;
+  transform: scale(0.95);
+}
+
+/* Mind map node styles */
+.mind-map-node {
+  min-width: 120px;
+  min-height: 60px;
+  padding: 1rem;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  cursor: grab;
+  user-select: none;
+}
+
+.mind-map-node:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+}
+
+.mind-map-node:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* Goal breakdown task cards */
+.task-card {
+  transition: all 0.3s ease;
+  min-height: 44px;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(60, 36, 21, 0.15);
+}
+
+.task-card.completed {
+  opacity: 0.7;
+  text-decoration: line-through;
+}
