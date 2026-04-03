@@ -22,7 +22,7 @@ interface GoalTask {
   subTasks: GoalTask[];
 }
 
-type AppState = 'login' | 'dashboard' | 'ai-terminal' | 'touch-typing' | 'mind-map' | 'goal-breakdown';
+type AppState = 'login' | 'dashboard' | 'ai-terminal' | 'touch-typing' | 'mind-map' | 'goal-breakdown' | 'progress-track';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppState>('login');
@@ -538,7 +538,7 @@ export default function App() {
             {
               title: '📊 Progress Track',
               desc: 'Visual progress and achievements',
-              action: () => {},
+              action: () => setCurrentView('progress-track'),
               color: 'from-teal-500 to-blue-500'
             }
           ].map((item, index) => (
@@ -574,13 +574,39 @@ export default function App() {
                 {speechText || 'Start speaking to see your words appear here...'}
               </p>
             </div>
-            <button
-              onClick={toggleSpeechRecognition}
-              className="magnetic-button mt-4 px-6 py-3 rounded-xl text-white font-semibold"
-              style={{ backgroundColor: isRecording ? '#ef4444' : '#4A90E2' }}
-            >
-              {isRecording ? '⏹️ Stop Recording' : '🎙️ Start Recording'}
-            </button>
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={toggleSpeechRecognition}
+                className="magnetic-button px-6 py-3 rounded-xl text-white font-semibold flex-1"
+                style={{ backgroundColor: isRecording ? '#ef4444' : '#4A90E2' }}
+              >
+                {isRecording ? '⏹️ Stop Recording' : '🎙️ Start Recording'}
+              </button>
+              <button
+                onClick={() => {
+                  const blob = new Blob([speechText], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `Speech_Note_${new Date().toLocaleDateString().replace(/\//g, '-')}.txt`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }}
+                className="magnetic-button px-6 py-3 rounded-xl text-white font-semibold flex-1"
+                style={{ backgroundColor: '#10B981' }}
+              >
+                ⬇️ Download Note
+              </button>
+              <button
+                onClick={() => setSpeechText('')}
+                className="magnetic-button px-6 py-3 rounded-xl text-white font-semibold flex-1"
+                style={{ backgroundColor: '#F59E0B' }}
+              >
+                🧹 Clear
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -666,6 +692,22 @@ export default function App() {
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
       ['z', 'x', 'c', 'v', 'b', 'n', 'm']
     ];
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Prevent page scroll for space
+        if (e.key === ' ' && e.target === document.body) {
+          e.preventDefault();
+        }
+        // If it's a single character key
+        if (e.key.length === 1) {
+          handleTypingKeyPress(e.key.toLowerCase());
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [typingProgress]); // Dependency on typingProgress to get updated closure
+
 
     return (
       <div className="min-h-screen p-4">
@@ -776,7 +818,7 @@ export default function App() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold" style={{ color: '#3C2415' }}>
-            🧠 Coggle-Style Mind Mapping
+            🧠 Interactive Mind Map
           </h1>
           <div className="flex gap-3">
             <button
@@ -798,32 +840,36 @@ export default function App() {
         <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold" style={{ color: '#3C2415' }}>
-              Interactive Mind Map Canvas
+              Your Ideas Canvas
             </h2>
             <div className="text-sm" style={{ color: '#3C2415' }}>
-              💡 Drag nodes to reposition • Click to edit • Use buttons to manage
+              💡 Drag nodes to move • Edit text directly • Hover for options
             </div>
           </div>
           
-          <div className="relative h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl border-2 border-dashed border-gray-300 overflow-hidden">
-            {/* SVG for connections */}
+          <div className="relative h-[600px] rounded-xl border-2 border-gray-200 overflow-hidden" style={{ 
+            backgroundColor: '#f8fafc',
+            backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+            backgroundSize: '20px 20px'
+          }}>
+            {/* SVG for curved connections */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
               {mindMapNodes.map(node =>
                 node.connections.map(connectionId => {
                   const connectedNode = mindMapNodes.find(n => n.id === connectionId);
                   if (!connectedNode) return null;
                   
+                  // Calculate bezier curve points
+                  const midX = (node.x + connectedNode.x) / 2;
+                  
                   return (
-                    <line
+                    <path
                       key={`${node.id}-${connectionId}`}
-                      x1={node.x}
-                      y1={node.y}
-                      x2={connectedNode.x}
-                      y2={connectedNode.y}
+                      d={`M ${node.x} ${node.y} C ${midX} ${node.y}, ${midX} ${connectedNode.y}, ${connectedNode.x} ${connectedNode.y}`}
                       stroke="#4A90E2"
                       strokeWidth="3"
-                      strokeDasharray="5,5"
-                      className="animate-pulse"
+                      fill="none"
+                      className="opacity-60 transition-all duration-300"
                     />
                   );
                 })
@@ -834,12 +880,16 @@ export default function App() {
             {mindMapNodes.map((node, index) => (
               <div
                 key={node.id}
-                className="mind-map-node absolute bg-white border-3 border-blue-500 shadow-lg cursor-move select-none"
+                className="absolute shadow-lg cursor-move select-none group transition-shadow hover:shadow-2xl"
                 style={{
-                  left: node.x - 60,
+                  left: node.x - 75,
                   top: node.y - 30,
+                  width: '150px',
                   backgroundColor: index === 0 ? '#4A90E2' : 'white',
-                  color: index === 0 ? 'white' : '#3C2415'
+                  borderRadius: '12px',
+                  border: index === 0 ? 'none' : '2px solid #e2e8f0',
+                  color: index === 0 ? 'white' : '#3C2415',
+                  zIndex: index === 0 ? 10 : 1
                 }}
                 draggable
                 onDragEnd={(e) => {
@@ -853,76 +903,45 @@ export default function App() {
                   }
                 }}
               >
-                <div className="font-semibold text-center">
-                  {node.text}
+                <div className="p-3">
+                  <input
+                    type="text"
+                    value={node.text}
+                    onChange={(e) => {
+                      setMindMapNodes(prev =>
+                        prev.map(n => n.id === node.id ? { ...n, text: e.target.value } : n)
+                      );
+                    }}
+                    className={`w-full text-center font-bold bg-transparent border-none focus:outline-none focus:ring-0 ${index === 0 ? 'text-white placeholder-blue-200' : 'text-gray-800'}`}
+                    placeholder="Idea..."
+                    autoFocus={node.text === 'New Idea'}
+                  />
                 </div>
-                <button
-                  onClick={() => removeMindMapNode(node.id)}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-all"
-                  style={{ fontSize: '10px' }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Node Management */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg">
-          <h3 className="text-xl font-bold mb-4" style={{ color: '#3C2415' }}>
-            📝 Manage Mind Map Nodes
-          </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mindMapNodes.map((node, index) => (
-              <div key={node.id} className="border-2 border-gray-200 rounded-xl p-4">
-                <input
-                  type="text"
-                  value={node.text}
-                  onChange={(e) => {
-                    setMindMapNodes(prev =>
-                      prev.map(n => n.id === node.id ? { ...n, text: e.target.value } : n)
-                    );
-                  }}
-                  className="w-full p-2 text-lg font-semibold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none mb-2"
-                  style={{ color: '#3C2415', minHeight: '44px' }}
-                />
-                <div className="text-sm" style={{ color: '#3C2415' }}>
-                  Connections: {node.connections.length}
-                </div>
-                <div className="flex gap-2 mt-2">
+                {index !== 0 && (
                   <button
+                    onClick={() => removeMindMapNode(node.id)}
+                    className="absolute -top-3 -right-3 w-7 h-7 bg-red-500 text-white rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 flex items-center justify-center shadow-md"
+                    title="Delete Node"
+                  >
+                    ×
+                  </button>
+                )}
+                <button
                     onClick={() => {
-                      // Add connection to next node
-                      const nextNodeIndex = (index + 1) % mindMapNodes.length;
-                      const nextNode = mindMapNodes[nextNodeIndex];
-                      if (nextNode && nextNode.id !== node.id) {
-                        setMindMapNodes(prev =>
-                          prev.map(n => {
-                            if (n.id === node.id && !n.connections.includes(nextNode.id)) {
-                              return { ...n, connections: [...n.connections, nextNode.id] };
-                            }
-                            if (n.id === nextNode.id && !n.connections.includes(node.id)) {
-                              return { ...n, connections: [...n.connections, node.id] };
-                            }
+                      const rootNode = mindMapNodes[0];
+                      if(rootNode && !node.connections.includes(rootNode.id) && index !== 0) {
+                         setMindMapNodes(prev => prev.map(n => {
+                            if(n.id === node.id) return {...n, connections: [...n.connections, rootNode.id]};
+                            if(n.id === rootNode.id && !n.connections.includes(node.id)) return {...n, connections: [...n.connections, node.id]};
                             return n;
-                          })
-                        );
+                         }));
                       }
                     }}
-                    className="magnetic-button px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-blue-500 text-white rounded-full text-xs opacity-0 group-hover:opacity-100 transition-all hover:bg-blue-600 flex items-center justify-center shadow-md"
+                    title="Connect to Main Idea"
                   >
-                    Connect
+                    🔗
                   </button>
-                  {index !== 0 && (
-                    <button
-                      onClick={() => removeMindMapNode(node.id)}
-                      className="magnetic-button px-3 py-1 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
               </div>
             ))}
           </div>
@@ -1101,6 +1120,61 @@ export default function App() {
     );
   };
 
+  // Progress Track Component
+  const ProgressTrack = () => (
+    <div className="min-h-screen p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold" style={{ color: '#3C2415' }}>
+            📊 Progress Track
+          </h1>
+          <button
+            onClick={() => setCurrentView('dashboard')}
+            className="magnetic-button px-4 py-2 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-all"
+          >
+            ← Back to Dashboard
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-lg mb-6">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#3C2415' }}>Your Achievements</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="p-4 bg-yellow-50 rounded-xl border-l-4 border-yellow-400">
+              <div className="text-2xl mb-1">🎯</div>
+              <h3 className="font-bold text-yellow-800">Goal Crusher</h3>
+              <p className="text-sm text-yellow-700">You completed 5 goals this week!</p>
+            </div>
+            <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-400">
+              <div className="text-2xl mb-1">⌨️</div>
+              <h3 className="font-bold text-blue-800">Type Master</h3>
+              <p className="text-sm text-blue-700">Reached Lesson {typingLesson} in Touch Typing!</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 shadow-lg">
+          <h2 className="text-xl font-bold mb-4" style={{ color: '#3C2415' }}>Activity History</h2>
+          <div className="space-y-4">
+             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <span className="text-2xl">🧠</span>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Mind Map Created</h4>
+                  <p className="text-sm text-gray-500">Today at 10:30 AM</p>
+                </div>
+             </div>
+             <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <span className="text-2xl">🤖</span>
+                <div>
+                  <h4 className="font-semibold text-gray-800">AI Command Used</h4>
+                  <p className="text-sm text-gray-500">Yesterday at 2:15 PM</p>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Main render logic
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#B0E0E6' }}>
@@ -1112,6 +1186,7 @@ export default function App() {
       {currentView === 'touch-typing' && <TouchTyping />}
       {currentView === 'mind-map' && <MindMap />}
       {currentView === 'goal-breakdown' && <GoalBreakdown />}
+      {currentView === 'progress-track' && <ProgressTrack />}
     </div>
   );
 }
