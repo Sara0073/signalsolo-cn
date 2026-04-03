@@ -41,6 +41,35 @@ export default function App() {
   const [isRecording, setIsRecording] = useState(false);
   const [speechText, setSpeechText] = useState('');
 
+  // Login Form States
+  const [loginName, setLoginName] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginProfile, setLoginProfile] = useState('');
+
+  // Global Key Listener for Touch Typing Mode
+  useEffect(() => {
+    if (currentView !== 'touch-typing') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === ' ' && e.target === document.body) e.preventDefault();
+      
+      if (e.key.length === 1) {
+        const targetText = "The quick brown fox jumps over the lazy dog";
+        if (targetText[typingProgress] === e.key || targetText[typingProgress] === e.key.toLowerCase()) {
+          setTypingProgress(prev => {
+            const next = prev + 1;
+            if (next >= targetText.length) {
+              setTypingLesson(l => Math.min(l + 1, 10));
+              return 0;
+            }
+            return next;
+          });
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentView, typingProgress]);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const speechRecognitionRef = useRef<any>(null);
@@ -328,16 +357,17 @@ export default function App() {
               <h3 className="text-lg font-semibold mb-3" style={{ color: '#3C2415' }}>
                 Face Recognition
               </h3>
-              <div className="camera-container w-full h-64 mb-4">
-                {faceRecognitionActive ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    className="w-full h-full object-cover rounded-xl"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-800 rounded-xl">
+              <div className="camera-container w-full h-64 mb-4 relative bg-gray-800 rounded-xl overflow-hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover absolute top-0 left-0 z-10"
+                  style={{ opacity: faceRecognitionActive ? 1 : 0 }}
+                />
+                {!faceRecognitionActive && (
+                  <div className="w-full h-full flex items-center justify-center absolute top-0 left-0 bg-gray-800 z-0">
                     <div className="text-center text-white">
                       <div className="text-4xl mb-2">📷</div>
                       <p>Camera ready for face recognition</p>
@@ -399,6 +429,8 @@ export default function App() {
               </label>
               <input
                 type="text"
+                value={loginName}
+                onChange={(e) => setLoginName(e.target.value)}
                 placeholder="Enter your full name"
                 className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
                 style={{ minHeight: '44px' }}
@@ -412,6 +444,8 @@ export default function App() {
               </label>
               <input
                 type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
                 placeholder="your.email@school.edu"
                 className="w-full p-4 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition-all"
                 style={{ minHeight: '44px' }}
@@ -432,7 +466,10 @@ export default function App() {
                 ].map((disability) => (
                   <button
                     key={disability.id}
-                    className="magnetic-button p-4 text-left border-2 border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300"
+                    onClick={() => setLoginProfile(disability.id)}
+                    className={`magnetic-button p-4 text-left border-2 rounded-xl transition-all duration-300 ${
+                      loginProfile === disability.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'
+                    }`}
                   >
                     <div className="font-semibold text-lg" style={{ color: '#3C2415' }}>
                       {disability.label}
@@ -444,6 +481,26 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            <button
+              onClick={() => {
+                if (loginName && loginEmail && loginProfile) {
+                  setUser({
+                    name: loginName,
+                    email: loginEmail,
+                    disability: loginProfile,
+                    biometricEnabled: false
+                  });
+                  setCurrentView('dashboard');
+                } else {
+                  alert('Please fill out all details!');
+                }
+              }}
+              className="magnetic-button w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl text-xl mt-4 shadow-lg transition-all"
+              style={{ backgroundColor: '#22c55e' }}
+            >
+              🚀 Login Now
+            </button>
           </div>
         </div>
 
@@ -692,22 +749,6 @@ export default function App() {
       ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
       ['z', 'x', 'c', 'v', 'b', 'n', 'm']
     ];
-
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        // Prevent page scroll for space
-        if (e.key === ' ' && e.target === document.body) {
-          e.preventDefault();
-        }
-        // If it's a single character key
-        if (e.key.length === 1) {
-          handleTypingKeyPress(e.key.toLowerCase());
-        }
-      };
-      window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [typingProgress]); // Dependency on typingProgress to get updated closure
-
 
     return (
       <div className="min-h-screen p-4">
