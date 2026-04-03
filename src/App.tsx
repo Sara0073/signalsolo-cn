@@ -45,6 +45,7 @@ export default function App() {
   const [loginName, setLoginName] = useState('');
   const [loginEmail, setLoginEmail] = useState('');
   const [loginProfile, setLoginProfile] = useState('');
+  const [newGoal, setNewGoal] = useState('');
 
   // Global Key Listener for Touch Typing Mode
   useEffect(() => {
@@ -993,8 +994,6 @@ export default function App() {
 
   // Goal Breakdown Component
   const GoalBreakdown = () => {
-    const [newGoal, setNewGoal] = useState('');
-
     return (
       <div className="min-h-screen p-4">
         <div className="max-w-4xl mx-auto">
@@ -1221,13 +1220,13 @@ export default function App() {
     <div className="min-h-screen" style={{ backgroundColor: '#B0E0E6' }}>
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       
-      {currentView === 'login' && <LoginPage />}
-      {currentView === 'dashboard' && <Dashboard />}
-      {currentView === 'ai-terminal' && <AiTerminal />}
-      {currentView === 'touch-typing' && <TouchTyping />}
-      {currentView === 'mind-map' && <MindMap />}
-      {currentView === 'goal-breakdown' && <GoalBreakdown />}
-      {currentView === 'progress-track' && <ProgressTrack />}
+      {currentView === 'login' && LoginPage()}
+      {currentView === 'dashboard' && Dashboard()}
+      {currentView === 'ai-terminal' && AiTerminal()}
+      {currentView === 'touch-typing' && TouchTyping()}
+      {currentView === 'mind-map' && MindMap()}
+      {currentView === 'goal-breakdown' && GoalBreakdown()}
+      {currentView === 'progress-track' && ProgressTrack()}
     </div>
   );
 }
